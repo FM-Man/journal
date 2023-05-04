@@ -2,10 +2,13 @@ package man.fm.journal.controllers;
 
 import man.fm.journal.models.datamodels.Post;
 import man.fm.journal.models.datamodels.User;
+import man.fm.journal.models.updatePayLoads.CreatePostPayload;
 import man.fm.journal.models.updatePayLoads.LikeOrDislikePayLoad;
 import man.fm.journal.models.updatePayLoads.PostUpdatePayLoad;
+import man.fm.journal.models.updatePayLoads.UserUpdatePayLoad;
 import man.fm.journal.services.PostService;
 import man.fm.journal.services.UserService;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -165,7 +168,34 @@ public class PostController {
                         servicePayload),
                 HttpStatus.OK);
     }
-//    
-//    @PutMapping("/post")
-//    public ResponseEntity<Optional<Post>> createPost()
+
+    @PutMapping("/post")
+    public ResponseEntity<Optional<Post>> createPost(@RequestBody CreatePostPayload payload){
+        Optional<User> poster = userService.getUserByUsername( payload.getPoster() );
+        if(poster.isEmpty())
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        Post post = new Post(
+                new ObjectId().toHexString(),
+                payload.getPoster(),
+                payload.getText(),
+                new ArrayList<>(),
+                new ArrayList<>()
+        );
+
+        poster.get()
+                .getPostIds()
+                .add( post.getPostId() );
+
+        userService.updateUser(new UserUpdatePayLoad(
+                poster.get().getUsername(),
+                poster.get().getPostIds(),
+                poster.get().getFollowerIds(),
+                poster.get().getFollowingIds()
+        ));
+
+        postService.createPost( post );
+
+        return new ResponseEntity<>(Optional.of(post),HttpStatus.OK);
+    }
 }

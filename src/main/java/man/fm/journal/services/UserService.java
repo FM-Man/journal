@@ -42,10 +42,10 @@ public class UserService {
         return retList;
     }
 
-    public Optional<User> updateUser(UserUpdatePayLoad payload){
+    public void updateUser(UserUpdatePayLoad payload){
         Optional<User> user = userRepository.findUserByUsername(payload.getUsername());
         if(user.isEmpty()){
-            return Optional.empty();
+            return;
         }
         User newUser = new User(
                 user.get().getId(),
@@ -56,6 +56,5 @@ public class UserService {
                 payload.getFollowingIds()
         );
         userRepository.save(newUser);
-        return Optional.of(newUser);
     }
 }
