@@ -57,4 +57,13 @@ public class UserService {
         );
         userRepository.save(newUser);
     }
+
+    public boolean createUser(User user){
+        Optional<User> conflict = userRepository.findUserByUsername(user.getUsername());
+        if(conflict.isEmpty()) {
+            userRepository.save(user);
+            return true;
+        }
+        else return false;
+    }
 }

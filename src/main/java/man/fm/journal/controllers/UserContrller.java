@@ -2,14 +2,17 @@ package man.fm.journal.controllers;
 
 import man.fm.journal.models.datamodels.User;
 import man.fm.journal.models.updatePayLoads.FollowOrUnfollowPayLoad;
+import man.fm.journal.models.updatePayLoads.SignupSigninPayLoad;
 import man.fm.journal.models.updatePayLoads.UserUpdatePayLoad;
 import man.fm.journal.services.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -124,5 +127,45 @@ public class UserContrller {
         return new ResponseEntity<>(
                 target.get(),
                 HttpStatus.OK);
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<Optional<User>> signup(@RequestBody SignupSigninPayLoad payload){
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        User newUser = new User(
+                new ObjectId().toHexString(),
+                payload.getUsername(),
+                encoder.encode(payload.getPassword()),
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>()
+        );
+
+        boolean successful = userService.createUser(newUser);
+        if(successful)
+            return new ResponseEntity<>(
+                    Optional.of(newUser),
+                    HttpStatus.OK);
+        else
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+    }
+
+    @PostMapping("/signin")
+    public ResponseEntity<Optional<User>> login(@RequestBody SignupSigninPayLoad payload){
+        Optional<User> user = userService.getUserByUsername(payload.getUsername());
+
+        if(user.isEmpty())
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        else {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            if( encoder.matches(
+                    payload.getPassword(),
+                    user.get().getPassword()))
+                return new ResponseEntity<>(
+                        user,
+                        HttpStatus.OK);
+            else
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
     }
 }
